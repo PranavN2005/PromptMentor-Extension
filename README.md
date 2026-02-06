@@ -14,7 +14,7 @@ Based on research in computer science education, I hope this extension helps nov
 
 ### Prereqs
 - Node/npm
-- Chrome browser
+- Chrome browser(for now)
 
 ### Installation
 
