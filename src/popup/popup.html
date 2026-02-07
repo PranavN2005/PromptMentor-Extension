@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptMentor</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!--
+    POPUP HTML
+    ==========
+    
+    This is the UI shown when clicking the extension icon.
+    
+    KEY POINTS:
+    - Popup has its own HTML document (separate from web pages)
+    - Scripts here CANNOT access web page DOM
+    - Must use chrome.storage or messaging to communicate with content scripts
+    
+    HTML SEMANTICS:
+    - <header>: Introductory content
+    - <main>: Primary content
+    - <section>: Grouped related content
+    - <footer>: Footer information
+  -->
+  
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1>PromptMentor?? Title still in the works</h1>
+      <p class="tagline">Learn to seek help effectively</p>
+    </header>
+    
+    <main class="popup-content">
+      <!-- Status indicator -->
+      <section class="status-section">
+        <div class="status-indicator active"></div>
+        <span id="status-text">Active on ChatGPT</span>
+      </section>
+      
+      <!-- Problem-solving framework reference -->
+      <section class="framework-section">
+        <h2>6-Step Problem Solving</h2>
+        <ol class="steps-list">
+          <li><strong>Reinterpret</strong> the problem</li>
+          <li><strong>Search</strong> for analogous problems</li>
+          <li><strong>Search</strong> for solutions</li>
+          <li><strong>Evaluate</strong> solutions</li>
+          <li><strong>Implement</strong></li>
+          <li><strong>Evaluate</strong> implementation</li>
+        </ol>
+        <p class="framework-tip">
+          💡 Ask AI for hints at each step, not solutions!
+        </p>
+      </section>
+      
+      <!-- Statistics (commented out - detection tracking disabled) -->
+      <!--
+      <section class="stats-section">
+        <h2>Your Session Stats ( Hypothetical ONLY professor.)</h2>
+        <div class="stat-row">
+          <span>Executive requests detected:</span>
+          <span id="executive-count" class="stat-value warning">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Adaptive prompts used:</span>
+          <span id="adaptive-count" class="stat-value success">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Last active:</span>
+          <span id="last-session" class="stat-value">Today</span>
+        </div>
+        <button id="reset-stats" class="reset-btn">Reset Stats</button>
+      </section>
+      -->
+    </main>
+    
+    <footer class="popup-footer">
+      <p>Pranav Nallaperumal 2026</p>
+    </footer>
+  </div>
+  
+  
+  <script src="popup.js"></script>
+</body>
+</html>

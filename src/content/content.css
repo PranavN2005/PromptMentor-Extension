@@ -1,0 +1,304 @@
+/**
+ * PROMPTMENTOR STYLES
+ * ===================
+ * 
+ * CSS doesn't need TypeScript compilation - it's copied as-is to dist/.
+ * 
+ * KEY CSS CONCEPTS USED:
+ * ----------------------
+ * 1. CSS Custom Properties (Variables): --pm-primary, etc.
+ * 2. Flexbox: display: flex for layouts
+ * 3. Fixed positioning: Keeps panel in place when scrolling
+ * 4. z-index: Stacking order (higher = on top)
+ * 5. Transitions/Animations: Smooth visual effects
+ * 6. Namespacing: All classes prefixed with "promptmentor-"
+ * 
+ * WHY NAMESPACE CLASSES?
+ * Our CSS is injected into ChatGPT's page. If we used generic names
+ * like ".panel" or ".button", they might conflict with ChatGPT's styles.
+ */
+
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (VARIABLES)
+   Define once, use everywhere. Makes theming easy.
+   ============================================================================ */
+:root {
+  --pm-primary: #6366f1;
+  --pm-primary-hover: #4f46e5;
+  --pm-primary-light: #e0e7ff;
+  --pm-success: #10b981;
+  --pm-success-light: #d1fae5;
+  --pm-warning: #f59e0b;
+  --pm-warning-light: #fef3c7;
+  --pm-danger: #ef4444;
+  --pm-text: #1f2937;
+  --pm-text-light: #6b7280;
+  --pm-bg: #ffffff;
+  --pm-border: #e5e7eb;
+  --pm-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --pm-radius: 12px;
+}
+
+/* ============================================================================
+   OVERLAY CONTAINER
+   ============================================================================ */
+.promptmentor-overlay {
+  /* Fixed positioning - stays in place when page scrolls */
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  
+  /* Visual styling */
+  background: var(--pm-bg);
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
+  
+  /* z-index: High value ensures we're on top of ChatGPT's UI */
+  z-index: 10000;
+  
+  /* Typography */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--pm-text);
+  
+  /* Scrolling if content overflows */
+  overflow-y: auto;
+  
+  /* Entry animation */
+  animation: pm-slideIn 0.3s ease-out;
+}
+
+/* ============================================================================
+   ANIMATIONS
+   @keyframes defines a custom animation sequence
+   ============================================================================ */
+@keyframes pm-slideIn {
+  from {
+    transform: translateX(100%);  /* Start off-screen to the right */
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);     /* End at normal position */
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   PANEL STRUCTURE
+   ============================================================================ */
+.promptmentor-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Header with gradient background */
+.promptmentor-header {
+  /* Flexbox for horizontal layout */
+  display: flex;
+  justify-content: space-between;  /* Title on left, close on right */
+  align-items: center;             /* Vertically centered */
+  
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--pm-primary) 0%, #8b5cf6 100%);
+  color: white;
+}
+
+.promptmentor-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Close button */
+.promptmentor-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;  /* Smooth hover effect */
+}
+
+.promptmentor-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================================
+   CONTENT AREA
+   ============================================================================ */
+.promptmentor-content {
+  padding: 20px;
+  flex: 1;  /* Takes remaining vertical space */
+}
+
+/* Warning box */
+.promptmentor-warning {
+  background: var(--pm-warning-light);
+  border: 1px solid #fcd34d;
+  border-left: 4px solid var(--pm-warning);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.promptmentor-warning strong {
+  color: #92400e;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.promptmentor-warning p {
+  margin: 0;
+  color: #78350f;
+  font-size: 14px;
+}
+
+/* Questions section */
+.promptmentor-questions {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.promptmentor-questions p {
+  margin: 0 0 12px 0;
+  color: var(--pm-text);
+}
+
+.promptmentor-questions p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+.promptmentor-button-group {
+  display: flex;
+  gap: 10px;  /* Space between buttons */
+}
+
+.promptmentor-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--pm-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  color: var(--pm-text);
+}
+
+.promptmentor-btn:hover {
+  background: #f3f4f6;
+}
+
+.promptmentor-btn:active {
+  transform: scale(0.98);
+}
+
+/* Button variants */
+.promptmentor-btn-yes {
+  background: var(--pm-success);
+  border-color: var(--pm-success);
+  color: white;
+}
+
+.promptmentor-btn-yes:hover {
+  background: #059669;
+}
+
+.promptmentor-btn-no {
+  background: white;
+  border-color: var(--pm-border);
+}
+
+.promptmentor-btn-copy {
+  width: 100%;
+  margin-top: 12px;
+  background: var(--pm-primary);
+  border-color: var(--pm-primary);
+  color: white;
+}
+
+.promptmentor-btn-copy:hover {
+  background: var(--pm-primary-hover);
+}
+
+.promptmentor-btn-proceed {
+  width: 100%;
+  background: white;
+  border: 2px solid var(--pm-text-light);
+  color: var(--pm-text-light);
+  margin-top: 20px;
+}
+
+.promptmentor-btn-proceed:hover {
+  border-color: var(--pm-text);
+  color: var(--pm-text);
+}
+
+/* ============================================================================
+   SUGGESTION BOX
+   ============================================================================ */
+.promptmentor-suggestion {
+  margin-bottom: 10px;
+}
+
+.promptmentor-suggestion p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.promptmentor-suggested-text {
+  background: var(--pm-success-light);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 12px;
+  font-style: italic;
+  color: #166534;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   FEEDBACK MESSAGES
+   ============================================================================ */
+.promptmentor-positive {
+  color: var(--pm-success);
+  font-weight: 500;
+}
+
+.promptmentor-encouragement {
+  color: var(--pm-primary);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   ACTIONS SECTION
+   ============================================================================ */
+.promptmentor-actions {
+  border-top: 1px solid var(--pm-border);
+  padding-top: 16px;
+  margin-top: auto;
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+@media (max-width: 500px) {
+  .promptmentor-overlay {
+    width: 100%;
+  }
+}
+

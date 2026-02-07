@@ -1,0 +1,191 @@
+/**
+ * POPUP STYLES
+ * ============
+ * 
+ * Popup windows have size constraints set by Chrome.
+ * Max width is typically around 800px, but we keep it small (~320px) for UX.
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Header */
+.popup-header {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+.popup-header h1 {
+  font-size: 20px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.tagline {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Content */
+.popup-content {
+  padding: 16px;
+  flex: 1;
+}
+
+/* Status section */
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.status-section.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-indicator.inactive {
+  background: #9ca3af;
+  animation: none;
+}
+
+/* Framework section */
+.framework-section {
+  margin-bottom: 16px;
+}
+
+.framework-section h2 {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.steps-list {
+  padding-left: 24px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.steps-list strong {
+  color: #6366f1;
+}
+
+.framework-tip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #92400e;
+}
+
+/* Stats section */
+.stats-section {
+  background: #f9fafb;
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.stats-section h2 {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stat-row:last-of-type {
+  border-bottom: none;
+}
+
+.stat-value {
+  font-weight: 600;
+}
+
+.stat-value.warning {
+  color: #f59e0b;
+}
+
+.stat-value.success {
+  color: #10b981;
+}
+
+.reset-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Footer */
+.popup-footer {
+  padding: 12px;
+  text-align: center;
+  background: #f3f4f6;
+  font-size: 11px;
+  color: #9ca3af;
+}
+

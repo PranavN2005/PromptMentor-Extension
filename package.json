@@ -1,0 +1,20 @@
+{
+  "name": "promptmentor-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for adaptive help-seeking from LLMs",
+  "type": "module",
+  "scripts": {
+    "build": "mkdir -p dist/content dist/popup && esbuild src/content/content.ts --bundle --outfile=dist/content/content.js --format=iife && esbuild src/popup/popup.ts --bundle --outfile=dist/popup/popup.js --format=iife && cp src/content/content.css dist/content/ && cp src/popup/popup.css dist/popup/ && cp src/popup/popup.html dist/popup/",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "@types/lodash-es": "^4.17.12",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.21"
+  }
+}
+

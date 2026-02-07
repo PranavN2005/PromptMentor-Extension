@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# compiled output, accidentalky commited tgis once, had to revert lol
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / editor files, standard practice, copied over from other webdev proj
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env / secrets if ANY lol
+.env
+.env.*
+
+# TypeScript build info
+*.tsbuildinfo
+
