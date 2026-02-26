@@ -75,6 +75,12 @@ const SELECTORS: DOMSelectors = {
  */
 const DEBOUNCE_DELAY_MS = 500;
 
+/**
+ * Composer: the input area where the user types (before sending).
+ * Multiple selectors for different ChatGPT DOM versions.
+ */
+const COMPOSER_SELECTOR = '#prompt-textarea, div.ProseMirror[contenteditable="true"], [class*="prosemirror-parent"]';
+
 // ============================================================================
 // STATE MANAGEMENT
 // ============================================================================
@@ -91,6 +97,9 @@ const state: AppState = {
   overlayVisible: false,
   processedMessages: new Set<string>()
 };
+
+/** Whether we're currently showing the "while typing" hint above the composer. */
+let typingHintVisible = false;
 
 // ============================================================================
 // UI CREATION
@@ -271,6 +280,88 @@ function removeOverlayPanel(): void {
 }
 
 // ============================================================================
+// TYPING HINT (composer / pre-send feedback)
+// ============================================================================
+
+function getComposerElement(): Element | null {
+  return document.querySelector(COMPOSER_SELECTOR);
+}
+
+function getComposerText(): string {
+  const el = getComposerElement();
+  return el?.textContent?.trim() ?? '';
+}
+
+function removeTypingHint(): void {
+  const hint = document.getElementById('promptmentor-typing-hint');
+  if (hint) {
+    hint.remove();
+    typingHintVisible = false;
+  }
+}
+
+function showTypingHint(suggestion: string): void {
+  removeTypingHint();
+  const composer = getComposerElement();
+  if (!composer) return;
+  const form = composer.closest('form');
+  const container = form?.parentElement ?? composer.parentElement;
+  if (!container) return;
+
+  const hint = document.createElement('div');
+  hint.id = 'promptmentor-typing-hint';
+  hint.className = 'promptmentor-typing-hint';
+  hint.innerHTML = `
+    <span class="promptmentor-typing-hint-icon">⚠️</span>
+    <span class="promptmentor-typing-hint-text">This may be executive help-seeking. Try: "${suggestion.substring(0, 60)}${suggestion.length > 60 ? '…' : ''}"</span>
+  `;
+  container.insertBefore(hint, form ?? composer);
+  typingHintVisible = true;
+}
+
+/**
+ * Runs when the user has paused typing in the composer (debounced).
+ * Analyzes current draft and shows a small hint if executive pattern detected.
+ */
+function checkComposerDraft(): void {
+  const text = getComposerText();
+  if (text.length < 15) {
+    removeTypingHint();
+    return;
+  }
+  const analysis = analyzePrompt(text);
+  if (analysis.isExecutive && analysis.suggestions[0]) {
+    showTypingHint(analysis.suggestions[0]);
+    console.log('[PromptMentor] Typing hint shown (executive draft detected)');
+  } else {
+    removeTypingHint();
+  }
+}
+
+const debouncedCheckComposer = debounce(checkComposerDraft, DEBOUNCE_DELAY_MS);
+
+/**
+ * Waits for the composer to exist, then observes it so we react to typing.
+ */
+function initComposerObserver(): void {
+  const composer = getComposerElement();
+  if (!composer) {
+    setTimeout(initComposerObserver, 500);
+    return;
+  }
+  const config: MutationObserverInit = {
+    childList: true,
+    subtree: true,
+    characterData: true
+  };
+  const observer = new MutationObserver(() => {
+    debouncedCheckComposer();
+  });
+  observer.observe(composer, config);
+  console.log('[PromptMentor] Composer observer initialized (typing detection active)');
+}
+
+// ============================================================================
 // DETECTION LOGIC
 // ============================================================================
 
@@ -431,8 +522,11 @@ function initMutationObserver(): void {
 function init(): void {
   console.log('[PromptMentor] Content script loaded on:', window.location.href);
   
-  // Start watching for DOM changes
+  // Start watching for DOM changes (sent messages)
   initMutationObserver();
+  
+  // Start watching composer for typing (pre-send feedback)
+  initComposerObserver();
   
   // Do an initial check (in case there's already content)
   setTimeout(checkForExecutiveHelpSeeking, 1000);
