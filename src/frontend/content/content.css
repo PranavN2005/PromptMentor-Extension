@@ -1,7 +1,6 @@
 /**
  * PROMPTMENTOR STYLES
- * ===================
- * 
+ *
  * CSS doesn't need TypeScript compilation - it's copied as-is to dist/.
  * 
  * KEY CSS CONCEPTS USED:
@@ -18,10 +17,8 @@
  * like ".panel" or ".button", they might conflict with ChatGPT's styles.
  */
 
-/* ============================================================================
-   CSS CUSTOM PROPERTIES (VARIABLES)
-   Define once, use everywhere. Makes theming easy.
-   ============================================================================ */
+/* CSS CUSTOM PROPERTIES (VARIABLES)
+   Define once, use everywhere. Makes theming easy. */
 :root {
   --pm-primary: #6366f1;
   --pm-primary-hover: #4f46e5;
@@ -39,9 +36,7 @@
   --pm-radius: 12px;
 }
 
-/* ============================================================================
-   OVERLAY CONTAINER
-   ============================================================================ */
+/* OVERLAY CONTAINER */
 .promptmentor-overlay {
   /* Fixed positioning - stays in place when page scrolls */
   position: fixed;
@@ -70,10 +65,8 @@
   animation: pm-slideIn 0.3s ease-out;
 }
 
-/* ============================================================================
-   ANIMATIONS
-   @keyframes defines a custom animation sequence
-   ============================================================================ */
+/* ANIMATIONS
+   @keyframes defines a custom animation sequence */
 @keyframes pm-slideIn {
   from {
     transform: translateX(100%); /* Start off-screen to the right */
@@ -85,9 +78,7 @@
   }
 }
 
-/* ============================================================================
-   PANEL STRUCTURE
-   ============================================================================ */
+/* PANEL STRUCTURE */
 .promptmentor-panel {
   display: flex;
   flex-direction: column;
@@ -132,9 +123,7 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* ============================================================================
-   CONTENT AREA
-   ============================================================================ */
+/* CONTENT AREA */
 .promptmentor-content {
   padding: 20px;
   flex: 1; /* Takes remaining vertical space */
@@ -179,9 +168,7 @@
   margin-bottom: 0;
 }
 
-/* ============================================================================
-   BUTTONS
-   ============================================================================ */
+/* BUTTONS */
 .promptmentor-button-group {
   display: flex;
   gap: 10px; /* Space between buttons */
@@ -248,9 +235,7 @@
   color: var(--pm-text);
 }
 
-/* ============================================================================
-   SUGGESTION BOX
-   ============================================================================ */
+/* SUGGESTION BOX */
 .promptmentor-suggestion {
   margin-bottom: 10px;
 }
@@ -271,9 +256,7 @@
   line-height: 1.5;
 }
 
-/* ============================================================================
-   FEEDBACK MESSAGES
-   ============================================================================ */
+/* FEEDBACK MESSAGES */
 .promptmentor-positive {
   color: var(--pm-success);
   font-weight: 500;
@@ -284,18 +267,14 @@
   font-weight: 500;
 }
 
-/* ============================================================================
-   ACTIONS SECTION
-   ============================================================================ */
+/* ACTIONS SECTION */
 .promptmentor-actions {
   border-top: 1px solid var(--pm-border);
   padding-top: 16px;
   margin-top: auto;
 }
 
-/* ============================================================================
-   TYPING HINT (above composer, non-blocking)
-   ============================================================================ */
+/* TYPING HINT (above composer, non-blocking) */
 .promptmentor-typing-hint {
   display: flex;
   align-items: center;
@@ -319,9 +298,7 @@
   line-height: 1.4;
 }
 
-/* ============================================================================
-   RESPONSIVE ADJUSTMENTS
-   ============================================================================ */
+/* RESPONSIVE ADJUSTMENTS */
 @media (max-width: 500px) {
   .promptmentor-overlay {
     width: 100%;

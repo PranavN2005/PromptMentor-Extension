@@ -1,57 +1,56 @@
 /**
- * POPUP SCRIPT
- * ============
+ * popup script
  *
- * This runs when the user clicks the extension icon in the toolbar.
+ * this runs when the user clicks the extension icon in the toolbar
  *
- * KEY DIFFERENCE FROM CONTENT SCRIPT:
- * - Content script: Runs IN the webpage, can access page's DOM
- * - Popup script: Runs in separate context, can ONLY access popup's DOM
+ * key difference from content script:
+ * - content script: runs IN the webpage can access pages dom
+ * - popup script: runs in separate context can ONLY access popups dom
  *
- * To share data between them, we use chrome.storage.
+ * to share data between them we use chrome.storage
  *
- * ASYNC/AWAIT PATTERN:
- * All chrome.storage operations are asynchronous (return Promises).
- * We use async/await for cleaner code instead of .then() chains.
+ * async/await pattern:
+ * all chrome.storage operations are asynchronous (return Promises)
+ * we use async/await for cleaner code instead of .then() chains
  */
 
 // StoredStats import lives in the commented-out loadStats() below — uncomment both together when re-enabling stats tracking
 // import type { StoredStats } from '../../shared/types';
 
 /**
- * Initialize popup when DOM is ready.
+ * initialize popup when dom is ready
  *
- * DOMContentLoaded fires when HTML is parsed (before images load).
- * This is the earliest safe time to manipulate the popup's DOM.
+ * DOMContentLoaded fires when html is parsed (before images load)
+ * this is the earliest safe time to manipulate the popups dom
  */
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[PromptMentor Popup] Loaded');
 
-  // Check if we're on ChatGPT
+  // check if were on chatgpt
   await checkActiveTab();
 
-  // Load and display stats (commented out - detection tracking disabled)
+  // load and display stats (commented out - detection tracking disabled)
   // await loadStats();
 });
 
 /**
- * Checks if the current tab is ChatGPT and updates the status indicator.
+ * checks if the current tab is chatgpt and updates the status indicator
  *
- * CHROME TABS API:
+ * chrome tabs api:
  * - chrome.tabs.query() finds tabs matching criteria
- * - { active: true, currentWindow: true } gets the current tab
- * - Returns an array, so we destructure the first element
+ * - { active: true currentWindow: true } gets the current tab
+ * - returns an array so we destructure the first element
  */
 async function checkActiveTab(): Promise<void> {
   try {
-    // Get the currently active tab in the current window
+    // get the currently active tab in the current window
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // Check if the URL matches ChatGPT domains
+    // check if the url matches chatgpt domains
     const url = tab?.url ?? '';
     const isOnChatGPT = url.includes('chatgpt.com') || url.includes('chat.openai.com');
 
-    // Get DOM elements
+    // get dom elements
     const statusIndicator = document.querySelector('.status-indicator');
     const statusText = document.getElementById('status-text');
     const statusSection = document.querySelector('.status-section');
@@ -75,8 +74,8 @@ async function checkActiveTab(): Promise<void> {
 }
 
 /**
- * Loads statistics from Chrome storage and updates the UI.
- * COMMENTED OUT: detection tracking disabled.
+ * loads statistics from chrome storage and updates the ui
+ * COMMENTED OUT: detection tracking disabled
  */
 // async function loadStats(): Promise<void> {
 //   try {
@@ -100,7 +99,7 @@ async function checkActiveTab(): Promise<void> {
 // }
 
 /**
- * Resets all statistics. COMMENTED OUT: reset button disabled.
+ * resets all statistics. COMMENTED OUT: reset button disabled
  */
 // async function resetStats(): Promise<void> {
 //   try {
@@ -117,7 +116,7 @@ async function checkActiveTab(): Promise<void> {
 //   }
 // }
 
-// Reset button handler (commented out - detection tracking disabled)
+// reset button handler (commented out - detection tracking disabled)
 // document.addEventListener('DOMContentLoaded', () => {
 //   const resetBtn = document.getElementById('reset-stats');
 //   if (resetBtn) resetBtn.addEventListener('click', resetStats);

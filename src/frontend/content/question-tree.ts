@@ -1,6 +1,5 @@
 /**
  * QUESTION TREE RENDERER — DOM SIDE OF THE TREE
- * ===============================================
  *
  * STUB FILE — populated in Step 3 of the sprint.
  *
@@ -11,7 +10,7 @@
  * - handles branch navigation state (which node are we on?)
  * - emits the final suggested prompt when a leaf node is reached
  *
- * IMPORTANT: this file CAN touch the DOM — it's in frontend/.
+ * this file CAN touch the DOM
  * the actual tree data/structure lives in src/backend/question-tree/builder.ts.
  */
 
