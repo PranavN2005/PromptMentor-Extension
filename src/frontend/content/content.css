@@ -49,23 +49,23 @@
   right: 0;
   bottom: 0;
   width: 400px;
-  
+
   /* Visual styling */
   background: var(--pm-bg);
   box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
-  
+
   /* z-index: High value ensures we're on top of ChatGPT's UI */
   z-index: 10000;
-  
+
   /* Typography */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: var(--pm-text);
-  
+
   /* Scrolling if content overflows */
   overflow-y: auto;
-  
+
   /* Entry animation */
   animation: pm-slideIn 0.3s ease-out;
 }
@@ -76,11 +76,11 @@
    ============================================================================ */
 @keyframes pm-slideIn {
   from {
-    transform: translateX(100%);  /* Start off-screen to the right */
+    transform: translateX(100%); /* Start off-screen to the right */
     opacity: 0;
   }
   to {
-    transform: translateX(0);     /* End at normal position */
+    transform: translateX(0); /* End at normal position */
     opacity: 1;
   }
 }
@@ -98,9 +98,9 @@
 .promptmentor-header {
   /* Flexbox for horizontal layout */
   display: flex;
-  justify-content: space-between;  /* Title on left, close on right */
-  align-items: center;             /* Vertically centered */
-  
+  justify-content: space-between; /* Title on left, close on right */
+  align-items: center; /* Vertically centered */
+
   padding: 16px 20px;
   background: linear-gradient(135deg, var(--pm-primary) 0%, #8b5cf6 100%);
   color: white;
@@ -125,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;  /* Smooth hover effect */
+  transition: background 0.2s ease; /* Smooth hover effect */
 }
 
 .promptmentor-close:hover {
@@ -137,7 +137,7 @@
    ============================================================================ */
 .promptmentor-content {
   padding: 20px;
-  flex: 1;  /* Takes remaining vertical space */
+  flex: 1; /* Takes remaining vertical space */
 }
 
 /* Warning box */
@@ -184,7 +184,7 @@
    ============================================================================ */
 .promptmentor-button-group {
   display: flex;
-  gap: 10px;  /* Space between buttons */
+  gap: 10px; /* Space between buttons */
 }
 
 .promptmentor-btn {
@@ -327,4 +327,3 @@
     width: 100%;
   }
 }
-

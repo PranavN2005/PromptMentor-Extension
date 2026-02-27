@@ -24,3 +24,12 @@ Thumbs.db
 # TypeScript build info
 *.tsbuildinfo
 
+# Test coverage output
+coverage/
+
+# Prettier cache (speeds up repeated format runs)
+.prettier-cache
+
+# ESLint cache (speeds up repeated lint runs)
+.eslintcache
+

@@ -1,24 +1,24 @@
 /**
  * PROMPTMENTOR CONTENT SCRIPT
  * ===========================
- * 
+ *
  * This TypeScript file is compiled to JavaScript and injected into ChatGPT.
- * 
+ *
  * KEY ARCHITECTURE:
  * -----------------
  * 1. MutationObserver watches for DOM changes
  * 2. Lodash debounce prevents excessive processing
  * 3. Pattern detector analyzes user prompts
  * 4. UI overlay shows warnings and suggestions
- * 
+ *
  * LODASH DEBOUNCE
  * ---------------
  * We import debounce from lodash-es (ES module version).
- * 
+ *
  * Why lodash-es instead of lodash?
  * - lodash: CommonJS, includes entire library (~70KB)
  * - lodash-es: ES modules, tree-shakeable (only what you import ~2KB)
- * 
+ *
  * The bundler (esbuild) will include only the debounce code in our output.
  */
 
@@ -27,8 +27,8 @@
 // ============================================================================
 
 import { debounce } from 'lodash-es';
-import { analyzePrompt } from './detector';
-import type { AppState, DOMSelectors, AnalysisResult } from '../types';
+import { analyzePrompt } from '../../backend/classifier/detector';
+import type { AppState, DOMSelectors, AnalysisResult } from '../../shared/types';
 
 // ============================================================================
 // CONFIGURATION
@@ -36,38 +36,38 @@ import type { AppState, DOMSelectors, AnalysisResult } from '../types';
 
 /**
  * DOM Selectors for ChatGPT's interface.
- * 
+ *
  * UPDATED based on your screenshot showing:
  * - Input: div#prompt-textarea.ProseMirror with contenteditable="true"
  * - Text inside: <p> tags
- * 
+ *
  * DESIGN CHOICE: Centralized selectors
  * When ChatGPT updates their UI, we only need to change these values.
  */
 const SELECTORS: DOMSelectors = {
   // The input area where users type (ProseMirror editor)
   promptInput: '#prompt-textarea, div.ProseMirror[contenteditable="true"]',
-  
+
   // User messages in chat history
   userMessage: 'div[data-message-author-role="user"]',
-  
+
   // AI responses
   assistantMessage: 'div[data-message-author-role="assistant"]',
-  
+
   // Content within messages
   messageContent: '.whitespace-pre-wrap, .markdown',
-  
+
   /**
    * Root node for MutationObserver.
-   * 
+   *
    * NOTE: learned to use boduy instead of main since GPT's DOM was wrapping this in hella whitespace containers
    */
-  conversationContainer: 'body'
+  conversationContainer: 'body',
 };
 
 /**
  * How long to wait after user stops typing before analyzing (in milliseconds).
- * 
+ *
  * DESIGN CHOICE: 500ms delay
  * - Too short (100ms): Triggers while still typing
  * - Too long (2000ms): Feels unresponsive
@@ -79,7 +79,8 @@ const DEBOUNCE_DELAY_MS = 500;
  * Composer: the input area where the user types (before sending).
  * Multiple selectors for different ChatGPT DOM versions.
  */
-const COMPOSER_SELECTOR = '#prompt-textarea, div.ProseMirror[contenteditable="true"], [class*="prosemirror-parent"]';
+const COMPOSER_SELECTOR =
+  '#prompt-textarea, div.ProseMirror[contenteditable="true"], [class*="prosemirror-parent"]';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -87,7 +88,7 @@ const COMPOSER_SELECTOR = '#prompt-textarea, div.ProseMirror[contenteditable="tr
 
 /**
  * Application state - tracks what we've processed to avoid duplicates.
- * 
+ *
  * WHY TRACK STATE?
  * MutationObserver fires frequently on small changes.
  * Without state tracking, we'd show the same warning multiple times.
@@ -95,11 +96,12 @@ const COMPOSER_SELECTOR = '#prompt-textarea, div.ProseMirror[contenteditable="tr
 const state: AppState = {
   lastAnalyzedPrompt: '',
   overlayVisible: false,
-  processedMessages: new Set<string>()
+  processedMessages: new Set<string>(),
 };
 
-/** Whether we're currently showing the "while typing" hint above the composer. */
-let typingHintVisible = false;
+// tracks whether the typing hint is currently visible
+// used in showTypingHint / removeTypingHint to avoid redundant DOM queries
+let typingHintVisible = false; // eslint-disable-line @typescript-eslint/no-unused-vars -- will be used in debounce guard (Step 4)
 
 // ============================================================================
 // UI CREATION
@@ -107,16 +109,16 @@ let typingHintVisible = false;
 
 /**
  * Creates the Help Request Builder overlay panel.
- * 
+ *
  * DESIGN CHOICE: Creating DOM elements via JavaScript
  * - More secure than innerHTML (no XSS risk with user content)
  * - But we use innerHTML here for template simplicity
  * - In production, you'd use a framework or sanitization
- * 
+ *
  * @param analysis - The analysis result from the detector
  * @param originalPrompt - The user's original prompt text
  */
-function createOverlayPanel(analysis: AnalysisResult, originalPrompt: string): void {
+function createOverlayPanel(analysis: AnalysisResult, _originalPrompt: string): void {
   // Remove existing overlay if present
   removeOverlayPanel();
 
@@ -126,8 +128,10 @@ function createOverlayPanel(analysis: AnalysisResult, originalPrompt: string): v
   overlay.className = 'promptmentor-overlay';
 
   // Get first suggestion or default
-  const suggestion = analysis.suggestions[0] ?? 'Can you give me a hint about how to approach this problem?';
-  const warningMessage = analysis.executivePatterns[0]?.message ?? 
+  const suggestion =
+    analysis.suggestions[0] ?? 'Can you give me a hint about how to approach this problem?';
+  const warningMessage =
+    analysis.executivePatterns[0]?.message ??
     'This prompt might give you the answer without helping you learn.';
 
   // Build HTML content
@@ -181,19 +185,19 @@ function createOverlayPanel(analysis: AnalysisResult, originalPrompt: string): v
 
 /**
  * Sets up click handlers for the overlay buttons.
- * 
+ *
  * EVENT LISTENERS EXPLAINED:
  * - addEventListener('click', callback) - runs callback when clicked
  * - The callback receives an Event object with details
  * - We use arrow functions to preserve 'this' context
- * 
+ *
  * ASYNC/AWAIT:
  * - navigator.clipboard.writeText returns a Promise
  * - We use async/await to handle it cleanly
  * - try/catch handles potential errors
  */
 function setupOverlayEventListeners(
-  overlay: HTMLElement, 
+  overlay: HTMLElement,
   analysis: AnalysisResult,
   suggestion: string
 ): void {
@@ -244,10 +248,10 @@ function setupOverlayEventListeners(
         // ASYNC OPERATION: Writing to clipboard
         // This is a Promise-based API - it might fail if permissions denied
         await navigator.clipboard.writeText(suggestion);
-        
+
         // Update button text temporarily
         copyBtn.textContent = '✓ Copied!';
-        
+
         // Reset after 2 seconds
         setTimeout(() => {
           copyBtn.textContent = '📋 Copy Suggestion';
@@ -352,7 +356,7 @@ function initComposerObserver(): void {
   const config: MutationObserverInit = {
     childList: true,
     subtree: true,
-    characterData: true
+    characterData: true,
   };
   const observer = new MutationObserver(() => {
     debouncedCheckComposer();
@@ -367,13 +371,13 @@ function initComposerObserver(): void {
 
 /**
  * Main detection function - finds and analyzes user prompts.
- * 
+ *
  * This is the function we debounce to avoid running on every keystroke.
  */
 function checkForExecutiveHelpSeeking(): void {
   // Find all user messages in the chat
   const userMessages = document.querySelectorAll(SELECTORS.userMessage);
-  
+
   if (userMessages.length === 0) {
     return;
   }
@@ -381,7 +385,7 @@ function checkForExecutiveHelpSeeking(): void {
   // Get the most recent user message
   const lastMessage = userMessages[userMessages.length - 1];
   const messageContent = lastMessage.querySelector(SELECTORS.messageContent);
-  
+
   if (!messageContent) {
     return;
   }
@@ -420,14 +424,14 @@ function checkForExecutiveHelpSeeking(): void {
 
 /**
  * DEBOUNCED VERSION OF OUR CHECKER
- * 
+ *
  * This is where we use Lodash's debounce function.
- * 
+ *
  * How it works:
  * 1. Call debouncedCheck() many times rapidly
  * 2. Lodash waits DEBOUNCE_DELAY_MS after the LAST call
  * 3. Then executes checkForExecutiveHelpSeeking() once
- * 
+ *
  * Options we could pass to debounce:
  * - { leading: true }  - Execute immediately on first call
  * - { trailing: true } - Execute after delay (default)
@@ -441,20 +445,20 @@ const debouncedCheck = debounce(checkForExecutiveHelpSeeking, DEBOUNCE_DELAY_MS)
 
 /**
  * Initializes the MutationObserver to watch for DOM changes.
- * 
+ *
  * WHY MUTATIONOBSERVER?
  * ChatGPT is a Single Page Application (SPA). It loads content dynamically
  * without full page refreshes. Our content script runs once when injected,
  * but new messages appear later via JavaScript.
- * 
+ *
  * MutationObserver watches for these dynamic changes and notifies us.
- * 
+ *
  * ANALOGY: Like a security camera that alerts you when something moves.
  */
 function initMutationObserver(): void {
   // Find the container to observe
   const targetNode = document.querySelector(SELECTORS.conversationContainer);
-  
+
   if (!targetNode) {
     // Container doesn't exist yet - ChatGPT might still be loading
     console.log('[PromptMentor] Waiting for conversation container...');
@@ -465,15 +469,16 @@ function initMutationObserver(): void {
 
   // Configuration: what types of mutations to observe
   const config: MutationObserverInit = {
-    childList: true,      // Watch for added/removed child elements
-    subtree: true,        // Watch entire subtree, not just direct children
-    characterData: true   // Watch for text content changes
+    childList: true, // Watch for added/removed child elements
+    subtree: true, // Watch entire subtree, not just direct children
+    characterData: true, // Watch for text content changes
   };
 
   // Create observer with callback
-  const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
-    // This fires on EVERY mutation - could be hundreds per second
-    // That's why we debounce our actual analysis logic
+  const observer = new MutationObserver((_mutationsList: MutationRecord[]) => {
+    // fires on EVERY DOM mutation — could be hundreds per second on a busy page
+    // we don't actually inspect the mutations, just use them as a trigger
+    // the debounce below makes sure we only analyze once things settle down
     debouncedCheck();
   });
 
@@ -521,25 +526,25 @@ function initMutationObserver(): void {
  */
 function init(): void {
   console.log('[PromptMentor] Content script loaded on:', window.location.href);
-  
+
   // Start watching for DOM changes (sent messages)
   initMutationObserver();
-  
+
   // Start watching composer for typing (pre-send feedback)
   initComposerObserver();
-  
+
   // Do an initial check (in case there's already content)
   setTimeout(checkForExecutiveHelpSeeking, 1000);
 }
 
 /**
  * WHEN TO RUN INIT:
- * 
+ *
  * document.readyState can be:
  * - "loading": HTML still being parsed
  * - "interactive": DOM ready, but resources loading
  * - "complete": Everything loaded
- * 
+ *
  * Since manifest uses run_at: "document_idle", we're usually at "complete".
  * But we check just to be safe.
  */
@@ -549,4 +554,3 @@ if (document.readyState === 'loading') {
   // DOM already ready, run immediately
   init();
 }
-

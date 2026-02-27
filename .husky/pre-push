@@ -1,0 +1,4 @@
+# runs before every push
+# full lint + format check on the entire codebase (not just staged files)
+# stricter than pre-commit — catches anything that slipped through
+npm run lint && npm run format:check

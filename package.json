@@ -4,17 +4,43 @@
   "description": "Chrome extension for adaptive help-seeking from LLMs",
   "type": "module",
   "scripts": {
-    "build": "mkdir -p dist/content dist/popup && esbuild src/content/content.ts --bundle --outfile=dist/content/content.js --format=iife && esbuild src/popup/popup.ts --bundle --outfile=dist/popup/popup.js --format=iife && cp src/content/content.css dist/content/ && cp src/popup/popup.css dist/popup/ && cp src/popup/popup.html dist/popup/",
-    "clean": "rm -rf dist"
+    "build": "npm run lint && npm run format:check && mkdir -p dist/content dist/popup && esbuild src/frontend/content/content.ts --bundle --outfile=dist/content/content.js --format=iife && esbuild src/frontend/popup/popup.ts --bundle --outfile=dist/popup/popup.js --format=iife && cp src/frontend/content/content.css dist/content/ && cp src/frontend/popup/popup.css dist/popup/ && cp src/frontend/popup/popup.html dist/popup/",
+    "build:fast": "mkdir -p dist/content dist/popup && esbuild src/frontend/content/content.ts --bundle --outfile=dist/content/content.js --format=iife && esbuild src/frontend/popup/popup.ts --bundle --outfile=dist/popup/popup.js --format=iife && cp src/frontend/content/content.css dist/content/ && cp src/frontend/popup/popup.css dist/popup/ && cp src/frontend/popup/popup.html dist/popup/",
+    "clean": "rm -rf dist",
+    "lint": "eslint --cache src/**/*.ts",
+    "lint:fix": "eslint --cache src/**/*.ts --fix",
+    "format": "prettier --cache --write src/**/*.ts src/**/*.css",
+    "format:check": "prettier --cache --check src/**/*.ts src/**/*.css",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.css": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
     "@types/chrome": "^0.0.260",
     "@types/lodash-es": "^4.17.12",
+    "@vitest/coverage-v8": "^3.0.0",
     "esbuild": "^0.27.3",
-    "typescript": "^5.3.3"
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "jsdom": "^26.0.0",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.56.1",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "lodash-es": "^4.17.21"
   }
 }
-

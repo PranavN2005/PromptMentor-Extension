@@ -1,0 +1,4 @@
+# runs before every commit
+# only lints/formats the files you actually staged (fast — not the whole codebase)
+# if this fails, the commit is blocked until you fix the issues
+npx lint-staged
