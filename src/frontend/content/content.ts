@@ -1,9 +1,11 @@
 /**
+ * THE BELOW COMMENTS WERE MADE BY AI BASED ON A PICTURE OF MY NOTES ON MY WHITEBOARD.
+ *
  * promptmentor content script — entry point + pipeline orchestrator
  *
  * this is the only file compiled and injected into chatgpt by the extension
  * its two jobs:
- * 1. define the 3-strategy pipeline (classify → handle → apply)
+ * 1. define the 3-strategy pipeline (classify then handle then apply)
  * 2. hold shared state and wire up the observer loops
  *
  * all heavy lifting lives elsewhere:
@@ -18,7 +20,7 @@
  * how the 3-strategy pipeline works (end to end)
  * ─────────────────────────────────────────────────────────────────────
  *
- *  user types in composer  ──► MutationObserver fires (typing-hint.ts)
+ *  user types in composer  ──> MutationObserver fires (typing-hint.ts)
  *                               └─ debounce (1s wait 3s maxWait)
  *                                    └─ analyzePromptAndApplyInterventions(draftText ...)
  *
@@ -44,7 +46,7 @@
  * content.ts never needs to change when you swap strategies
  *
  * ─────────────────────────────────────────────────────────────────────
- * dependency graph (no circular deps)
+ * dependency graph
  * ─────────────────────────────────────────────────────────────────────
  *
  *  content.ts
