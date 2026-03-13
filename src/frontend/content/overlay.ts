@@ -3,10 +3,11 @@
  *
  * builds and shows the side panel when we detect executive help-seeking
  * all dom for the panel lives here; content.ts just calls createOverlayPanel
- * and passes callbacks so it can keep overlayVisible in sync
+ * and passe callbacks so it can keep overlayVisible in sync
  */
 
-import type { AnalysisResult } from '../../shared/types';
+import type { AnalysisResult } from '../../backend/classifier/types';
+import { trackTelemetryEvent } from '../../telemetry';
 
 export interface OverlayCallbacks {
   onOpen?: () => void;
@@ -16,11 +17,15 @@ export interface OverlayCallbacks {
 /**
  * removes the overlay from the page. call onClose so the owner can update state
  */
-export function removeOverlayPanel(callbacks?: OverlayCallbacks): void {
+export function removeOverlayPanel(
+  callbacks?: OverlayCallbacks,
+  reason: 'replacement' | 'close_button' | 'proceed_button' | 'external' = 'external'
+): void {
   const existing = document.getElementById('promptmentor-overlay');
   if (existing) {
     existing.remove();
     callbacks?.onClose();
+    trackTelemetryEvent('overlay_closed', { reason });
   }
 }
 
@@ -33,7 +38,7 @@ export function createOverlayPanel(
   _originalPrompt: string,
   callbacks: OverlayCallbacks
 ): void {
-  removeOverlayPanel(callbacks);
+  removeOverlayPanel(callbacks, 'replacement');
 
   const overlay = document.createElement('div');
   overlay.id = 'promptmentor-overlay';
@@ -75,28 +80,30 @@ export function createOverlayPanel(
     </div>
   `;
 
-  setupOverlayEventListeners(overlay, analysis, suggestion, callbacks);
+  setupOverlayEventListeners(overlay, suggestion, callbacks);
 
   document.body.appendChild(overlay);
   callbacks.onOpen?.();
-
-  console.log('[PromptMentor] Overlay displayed for executive help-seeking');
+  trackTelemetryEvent('overlay_displayed', {
+    suggestionCount: analysis.suggestions.length,
+  });
 }
 
 function setupOverlayEventListeners(
   overlay: HTMLElement,
-  analysis: AnalysisResult,
   suggestion: string,
   callbacks: OverlayCallbacks
 ): void {
-  const close = () => removeOverlayPanel(callbacks);
-
   const closeBtn = overlay.querySelector('.promptmentor-close');
-  if (closeBtn) closeBtn.addEventListener('click', close);
+  if (closeBtn)
+    closeBtn.addEventListener('click', () => removeOverlayPanel(callbacks, 'close_button'));
 
   const yesBtn = overlay.querySelector('.promptmentor-btn-yes');
   if (yesBtn) {
     yesBtn.addEventListener('click', () => {
+      trackTelemetryEvent('overlay_question_answered', {
+        response: 'yes',
+      });
       const questionsDiv = overlay.querySelector('.promptmentor-questions');
       if (questionsDiv) {
         questionsDiv.innerHTML = `
@@ -111,6 +118,9 @@ function setupOverlayEventListeners(
   const noBtn = overlay.querySelector('.promptmentor-btn-no');
   if (noBtn) {
     noBtn.addEventListener('click', () => {
+      trackTelemetryEvent('overlay_question_answered', {
+        response: 'no',
+      });
       const questionsDiv = overlay.querySelector('.promptmentor-questions');
       if (questionsDiv) {
         questionsDiv.innerHTML = `
@@ -128,11 +138,17 @@ function setupOverlayEventListeners(
     copyBtn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(suggestion);
+        trackTelemetryEvent('suggestion_copy_attempted', {
+          success: true,
+        });
         copyBtn.textContent = '✓ Copied!';
         setTimeout(() => {
           copyBtn.textContent = '📋 Copy Suggestion';
         }, 2000);
       } catch (error) {
+        trackTelemetryEvent('suggestion_copy_attempted', {
+          success: false,
+        });
         console.error('[PromptMentor] Failed to copy:', error);
         copyBtn.textContent = 'Failed to copy';
       }
@@ -140,5 +156,7 @@ function setupOverlayEventListeners(
   }
 
   const proceedBtn = overlay.querySelector('.promptmentor-btn-proceed');
-  if (proceedBtn) proceedBtn.addEventListener('click', close);
+  if (proceedBtn) {
+    proceedBtn.addEventListener('click', () => removeOverlayPanel(callbacks, 'proceed_button'));
+  }
 }

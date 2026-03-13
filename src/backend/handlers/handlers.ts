@@ -16,7 +16,7 @@
  * on the returned instruction object
  *
  * want to add a new handler?
- * 1. extend ExecutiveHandler or AdaptiveHandler (from shared/types.ts)
+ * 1. extend ExecutiveHandler or AdaptiveHandler (from handlers/types.ts)
  * 2. implement handle()
  * 3. update getActiveExecutiveHandler() or getActiveAdaptiveHandler() below
  * thats literally it — nothing else in the codebase needs to change
@@ -25,10 +25,10 @@
 import {
   ExecutiveHandler,
   AdaptiveHandler,
-  type AnalysisResult,
   type ExecutiveIntervention,
   type AdaptiveIntervention,
-} from '../../shared/types';
+} from './types';
+import type { AnalysisResult } from '../classifier/types';
 
 // executive handlers
 

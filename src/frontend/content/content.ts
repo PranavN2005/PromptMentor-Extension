@@ -20,13 +20,13 @@
  *
  *  user types in composer  ──► MutationObserver fires (typing-hint.ts)
  *                               └─ debounce (1s wait 3s maxWait)
- *                                    └─ runPipeline(draftText ...)
+ *                                    └─ analyzePromptAndApplyInterventions(draftText ...)
  *
  *  user hits send  ─────────► MutationObserver fires (post-send.ts)
  *                               └─ debounce (1s wait)
- *                                    └─ runPipeline(sentText ...)
+ *                                    └─ analyzePromptAndApplyInterventions(sentText ...)
  *
- *  runPipeline:
+ *  analyzePromptAndApplyInterventions:
  *    getActiveClassifier().classify(text)  →  AnalysisResult
  *        │
  *        ├─ isExecutive? → getActiveExecutiveHandler().handle(result)
@@ -49,22 +49,27 @@
  *
  *  content.ts
  *    → overlay.ts
- *    → typing-hint.ts   (one-way: content passes runPipeline as callback)
- *    → post-send.ts     (one-way: content passes runPipeline as callback)
+ *    → typing-hint.ts   (one-way: content passes analyzePromptAndApplyInterventions as callback)
+ *    → post-send.ts     (one-way: content passes analyzePromptAndApplyInterventions as callback)
  *    → backend/handlers/handlers.ts
  *    → backend/classifier/detector.ts
- *    → shared/types.ts
+ *    → frontend/content/types.ts
+ *    → backend/handlers/types.ts
  */
 
-import type { AppState, ExecutiveIntervention, AdaptiveIntervention } from '../../shared/types';
+import type { AppState } from './types';
+import type { ExecutiveIntervention, AdaptiveIntervention } from '../../backend/handlers/types';
 import { createOverlayPanel, removeOverlayPanel } from './overlay';
-import { showTypingHintText, removeTypingHint, initComposerObserver } from './typing-hint';
-import { initMutationObserver } from './post-send';
+import { startDraftPromptObserver } from './typing-hint';
+import { showTypingHintText, removeTypingHint } from './typing-hint-view';
+import { startConversationObserver } from './post-send';
 import {
   getActiveExecutiveHandler,
   getActiveAdaptiveHandler,
 } from '../../backend/handlers/handlers';
 import { getActiveClassifier } from '../../backend/classifier/detector';
+import { configureTelemetry, trackTelemetryEvent, debugLog } from '../../telemetry';
+import type { PromptAnalysisSource } from '../../telemetry';
 
 // shared state
 
@@ -91,7 +96,7 @@ const state: AppState = {
  *
  * switching on intervention.type is intentional — its an exhaustive
  * discriminated-union switch. if you add a new variant to ExecutiveIntervention
- * in shared/types.ts typescript will highlight this switch as incomplete until
+ * in backend/handlers/types.ts typescript will highlight this switch as incomplete until
  * you handle the new case here. thats the whole point
  *
  * @param intervention — what to do (returned by the active ExecutiveHandler)
@@ -129,12 +134,13 @@ function applyExecutiveIntervention(intervention: ExecutiveIntervention, promptT
     case 'blur_response':
       // blur the latest ai response — implemented in step 5 (blur-reveal)
       // wired here so the type system stays exhaustive even before step 5 is done
-      console.log('[PromptMentor] blur_response intervention — wired in Step 5');
+      trackTelemetryEvent('blur_response_requested', {});
+      debugLog('blur_response intervention selected (not implemented yet)');
       break;
 
     case 'silent':
       // control group — detect but intentionally do nothing
-      console.log('[PromptMentor] executive detected but handler is silent (control group)');
+      debugLog('Executive help-seeking detected but intervention is silent');
       break;
   }
 }
@@ -147,12 +153,12 @@ function applyAdaptiveIntervention(intervention: AdaptiveIntervention): void {
   switch (intervention.type) {
     case 'affirm':
       // future: show a small positive toast. logged for now
-      console.log('[PromptMentor] Adaptive help-seeking — affirm:', intervention.message);
+      debugLog('Adaptive affirm intervention selected');
       break;
 
     case 'silent':
       // default: student is doing it right stay out of the way
-      console.log('[PromptMentor] Adaptive help-seeking detected (silent handler)');
+      debugLog('Adaptive help-seeking detected with silent intervention');
       break;
   }
 }
@@ -160,41 +166,54 @@ function applyAdaptiveIntervention(intervention: AdaptiveIntervention): void {
 // pipeline — classify → handle → apply
 
 /**
- * runPipeline
+ * analyzePromptAndApplyInterventions
  * the shared classification pipeline used by BOTH the typing-hint and post-send paths
- * this function is passed as a callback into initComposerObserver and initMutationObserver
+ * this function is passed as a callback into startDraftPromptObserver and startConversationObserver
  * to avoid circular imports (typing-hint/post-send dont import content.ts)
  *
  * @param text           — the text to classify (draft while typing or sent message)
  * @param overlayVisible — guard so we dont open a second panel on top of the first
  * @param promptText     — original text to pass to the overlay for display context
+ * @param source         — indicates whether analysis came from draft typing or a sent message
  */
-function runPipeline(text: string, overlayVisible: boolean, promptText: string): void {
+function analyzePromptAndApplyInterventions(
+  text: string,
+  overlayVisible: boolean,
+  promptText: string,
+  source: PromptAnalysisSource
+): void {
   const classifier = getActiveClassifier();
   const result = classifier.classify(text);
 
-  console.log('[PromptMentor] Pipeline ran', {
-    classifier: classifier.name,
+  trackTelemetryEvent('pipeline_executed', {
+    source,
+    classifierName: classifier.name,
+    promptLength: text.length,
     isExecutive: result.isExecutive,
     isAdaptive: result.isAdaptive,
-    snippet: text.slice(0, 50),
   });
 
   if (result.isExecutive && !overlayVisible) {
     const executiveHandler = getActiveExecutiveHandler();
     const intervention = executiveHandler.handle(result);
-    console.log('[PromptMentor] Executive handler:', executiveHandler.name, '→', intervention.type);
+    trackTelemetryEvent('executive_intervention_selected', {
+      handlerName: executiveHandler.name,
+      interventionType: intervention.type,
+    });
     applyExecutiveIntervention(intervention, promptText);
   }
 
   if (result.isAdaptive) {
     const adaptiveHandler = getActiveAdaptiveHandler();
     const intervention = adaptiveHandler.handle(result);
+    trackTelemetryEvent('adaptive_intervention_selected', {
+      handlerName: adaptiveHandler.name,
+      interventionType: intervention.type,
+    });
     applyAdaptiveIntervention(intervention);
   }
 
   if (!result.isExecutive && !result.isAdaptive) {
-    console.log('[PromptMentor] No specific pattern detected');
     // clean up any old typing hint if the user edited the prompt to be non-executive
     removeTypingHint();
   }
@@ -203,15 +222,20 @@ function runPipeline(text: string, overlayVisible: boolean, promptText: string):
 // init
 
 function init(): void {
-  console.log('[PromptMentor] Content script loaded on:', window.location.href);
-  console.log('[PromptMentor Debug] init started', {
-    readyState: document.readyState,
-    href: window.location.href,
+  configureTelemetry({
+    destination: 'storage',
+    mirrorToConsole: false,
+    debugEnabled: false,
   });
 
-  // pass runPipeline as a callback — avoids circular imports
-  initMutationObserver(state, runPipeline);
-  initComposerObserver(state, runPipeline);
+  trackTelemetryEvent('content_script_initialized', {
+    pageUrl: window.location.href,
+    readyState: document.readyState,
+  });
+
+  // pass analyzePromptAndApplyInterventions as callback — avoids circular imports
+  startConversationObserver(state, analyzePromptAndApplyInterventions);
+  startDraftPromptObserver(state, analyzePromptAndApplyInterventions);
 }
 
 if (document.readyState === 'loading') {

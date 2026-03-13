@@ -7,9 +7,9 @@
  * selector-agnostic
  */
 
-import type { DOMSelectors } from '../../shared/types';
+import type { DOMSelectors } from './types';
 
-/** dom selectors for chatgpts interface */
+/** dom selectors for chatgpts interface(s) */
 export const SELECTORS: DOMSelectors = {
   promptInput: '#prompt-textarea, div.ProseMirror[contenteditable="true"]',
   userMessage: 'div[data-message-author-role="user"]',
@@ -38,33 +38,23 @@ export const COMPOSER_SELECTOR =
 export function getComposerElement(): Element | null {
   const primary = document.querySelector('div#prompt-textarea.ProseMirror[contenteditable="true"]');
   if (primary) {
-    console.log('[PromptMentor Debug] getComposerElement: branch=primary', {
-      id: primary.id,
-      className: primary.className,
-    });
     return primary;
   }
 
   const parent = document.querySelector('[class*="prosemirror-parent"]');
   if (parent) {
-    console.log('[PromptMentor Debug] getComposerElement: branch=parent', {
-      className: parent.className,
-    });
     return parent;
   }
 
   const editable = document.querySelector('div.ProseMirror[contenteditable="true"]');
   if (editable) {
-    console.log('[PromptMentor Debug] getComposerElement: branch=editable');
     return editable;
   }
 
   const fallback = document.querySelector(COMPOSER_SELECTOR);
   if (fallback) {
-    console.log('[PromptMentor Debug] getComposerElement: branch=fallback');
     return fallback;
   }
-  console.log('[PromptMentor Debug] getComposerElement: composer not found (branch=none)');
   return null;
 }
 

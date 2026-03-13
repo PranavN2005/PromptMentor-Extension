@@ -15,7 +15,7 @@
  */
 
 // StoredStats import lives in the commented-out loadStats() below — uncomment both together when re-enabling stats tracking
-// import type { StoredStats } from '../../shared/types';
+// import type { StoredStats } from './types';
 
 /**
  * initialize popup when dom is ready

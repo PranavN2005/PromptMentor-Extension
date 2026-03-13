@@ -4,7 +4,7 @@
  * watches the chat thread for new user message bubbles debounces the check
  * then runs the full classifier → handler → intervention pipeline
  *
- * design note — why runPipeline is passed in (not imported from content.ts):
+ * design note — why analyzePromptAndApplyInterventions is passed in (not imported from content.ts):
  * same reason as typing-hint.ts: content.ts imports this file so this file
  * CANNOT import from content.ts without a circular dependency. we inject it
  *
@@ -19,9 +19,10 @@
  */
 
 import { debounce } from 'lodash-es';
-import type { AppState } from '../../shared/types';
-import type { RunPipelineFn } from './typing-hint';
+import type { AppState } from './types';
+import type { AnalyzePromptPipelineFn } from './typing-hint';
 import { SELECTORS, DEBOUNCE_DELAY_MS } from './config';
+import { trackTelemetryEvent, debugLog } from '../../telemetry';
 
 // post-send check (with duplicate + stale guards)
 
@@ -29,9 +30,12 @@ import { SELECTORS, DEBOUNCE_DELAY_MS } from './config';
  * finds the last user message in the thread checks if its new and runs the pipeline
  *
  * @param state       — shared app state (reads lastAnalyzedPrompt processedMessages; mutates them)
- * @param runPipeline — injected from content.ts to avoid circular import
+ * @param analyzePromptAndApplyInterventions — injected from content.ts to avoid circular import
  */
-export function checkForExecutiveHelpSeeking(state: AppState, runPipeline: RunPipelineFn): void {
+export function analyzeLatestSentUserPrompt(
+  state: AppState,
+  analyzePromptAndApplyInterventions: AnalyzePromptPipelineFn
+): void {
   const userMessages = document.querySelectorAll(SELECTORS.userMessage);
   if (userMessages.length === 0) return;
 
@@ -48,9 +52,7 @@ export function checkForExecutiveHelpSeeking(state: AppState, runPipeline: RunPi
   // processedMessages guard: we already handled this exact text this session
   // (protects against scroll-up re-triggering on history messages)
   if (state.processedMessages.has(promptText)) {
-    console.log('[PromptMentor Debug] post-send: skipping already-processed message', {
-      snippet: promptText.slice(0, 40),
-    });
+    trackTelemetryEvent('duplicate_post_send_prompt_skipped', {});
     return;
   }
 
@@ -58,9 +60,11 @@ export function checkForExecutiveHelpSeeking(state: AppState, runPipeline: RunPi
   state.lastAnalyzedPrompt = promptText;
   state.processedMessages.add(promptText);
 
-  console.log('[PromptMentor] Post-send analyzing:', promptText.substring(0, 50) + '...');
+  trackTelemetryEvent('post_send_prompt_analyzed', {
+    promptLength: promptText.length,
+  });
 
-  runPipeline(promptText, state.overlayVisible, promptText);
+  analyzePromptAndApplyInterventions(promptText, state.overlayVisible, promptText, 'post_send');
 }
 
 // mutation observer setup
@@ -70,18 +74,21 @@ export function checkForExecutiveHelpSeeking(state: AppState, runPipeline: RunPi
  * retries every 1s until the container appears
  *
  * @param state       — shared app state
- * @param runPipeline — injected from content.ts to avoid circular import
+ * @param analyzePromptAndApplyInterventions — injected from content.ts to avoid circular import
  */
-export function initMutationObserver(state: AppState, runPipeline: RunPipelineFn): void {
+export function startConversationObserver(
+  state: AppState,
+  analyzePromptAndApplyInterventions: AnalyzePromptPipelineFn
+): void {
   const targetNode = document.querySelector(SELECTORS.conversationContainer);
   if (!targetNode) {
-    console.log('[PromptMentor] Waiting for conversation container...');
-    setTimeout(() => initMutationObserver(state, runPipeline), 1000);
+    trackTelemetryEvent('conversation_container_unavailable', {});
+    setTimeout(() => startConversationObserver(state, analyzePromptAndApplyInterventions), 1000);
     return;
   }
 
   const debouncedCheck = debounce(
-    () => checkForExecutiveHelpSeeking(state, runPipeline),
+    () => analyzeLatestSentUserPrompt(state, analyzePromptAndApplyInterventions),
     DEBOUNCE_DELAY_MS,
     {
       leading: false,
@@ -103,5 +110,8 @@ export function initMutationObserver(state: AppState, runPipeline: RunPipelineFn
   });
 
   observer.observe(targetNode, observerConfig);
-  console.log('[PromptMentor] MutationObserver initialized');
+  trackTelemetryEvent('conversation_observer_started', {
+    debounceDelayMs: DEBOUNCE_DELAY_MS,
+  });
+  debugLog('Conversation observer initialized');
 }

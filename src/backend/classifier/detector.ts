@@ -13,7 +13,7 @@
  * - responseContainsCode(): checks if the ai response looks like it gave a solution
  *
  * want to swap the classifier?
- * just extend PromptClassifier (in types/index.ts) and implement classify().
+ * just extend PromptClassifier (in backend/classifier/types.ts) and implement classify().
  * then update getActiveClassifier() in content.ts to return your new one.
  * seriously thats all you have to do
  *
@@ -26,8 +26,8 @@
  * which is good enough for a first pass
  */
 
-import type { PatternConfig, AnalysisResult } from '../../shared/types';
-import { PromptClassifier } from '../../shared/types';
+import type { PatternConfig, AnalysisResult } from './types';
+import { PromptClassifier } from './types';
 
 // pattern configs — the detection rules
 

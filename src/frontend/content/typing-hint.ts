@@ -4,11 +4,10 @@
  * watches the composer div for changes debounces so we dont analyze every
  * keystroke then runs the full classifier → handler → intervention pipeline
  *
- * two things live here:
- * 1. the dom work: showTypingHintText / removeTypingHint
- * 2. the observer setup: initComposerObserver
+ * this file owns ONLY observer/debounce logic
+ * the hint dom rendering/removal lives in typing-hint-view.ts
  *
- * design note — why runPipeline is passed in (not imported from content.ts):
+ * design note — why analyzePromptAndApplyInterventions is passed in (not imported from content.ts):
  * content.ts imports this file so this file CANNOT import from content.ts
  * without creating a circular dependency. dependency injection (passing the
  * function as a parameter) sidesteps this cleanly
@@ -23,61 +22,36 @@
  */
 
 import { debounce } from 'lodash-es';
-import type { AppState } from '../../shared/types';
+import type { AppState } from './types';
 import { getComposerElement, getComposerText, DEBOUNCE_DELAY_MS } from './config';
+import { debugLog, trackTelemetryEvent } from '../../telemetry';
+import { removeTypingHint } from './typing-hint-view';
 
 // fires analysis at most every DEBOUNCE_DELAY_MS after the last keystroke
 // but guarantees a check at least once every MAX_WAIT_MS even while still typing
 const MAX_WAIT_MS = 3000;
 
 /** type alias for the pipeline runner injected from content.ts */
-export type RunPipelineFn = (text: string, overlayVisible: boolean, promptText: string) => void;
-
-// hint dom
-
-/**
- * removes the current typing hint from the dom if present
- */
-export function removeTypingHint(): void {
-  const hint = document.getElementById('promptmentor-typing-hint');
-  if (hint) hint.remove();
-}
-
-/**
- * shows a small yellow hint bar above the composer with the given text
- * called by applyExecutiveIntervention in content.ts when intervention.type === show_hint
- */
-export function showTypingHintText(hintText: string): void {
-  removeTypingHint();
-  const composer = getComposerElement();
-  if (!composer) return;
-
-  // walk up to find a stable container above the form so we insert outside the input
-  const form = composer.closest('form');
-  const container = form?.parentElement ?? composer.parentElement;
-  if (!container) return;
-
-  const hint = document.createElement('div');
-  hint.id = 'promptmentor-typing-hint';
-  hint.className = 'promptmentor-typing-hint';
-  hint.innerHTML = `
-    <span class="promptmentor-typing-hint-icon">⚠️</span>
-    <span class="promptmentor-typing-hint-text">${hintText.substring(0, 100)}${hintText.length > 100 ? '…' : ''}</span>
-  `;
-  container.insertBefore(hint, form ?? composer);
-  console.log('[PromptMentor] Typing hint shown above composer');
-}
+export type AnalyzePromptPipelineFn = (
+  text: string,
+  overlayVisible: boolean,
+  promptText: string,
+  source: 'draft' | 'post_send'
+) => void;
 
 // debounced composer check (with stale-result guard)
 
 /**
- * closes over the injected runPipeline + state references
+ * closes over the injected analyzePromptAndApplyInterventions + state references
  * returns a debounced function that runs the pipeline when the user pauses
  *
- * factored out so initComposerObserver can create it once and hold the reference
+ * factored out so startDraftPromptObserver can create it once and hold the reference
  * (important: debounce only works if you reuse the same debounced instance)
  */
-function createDebouncedCheck(state: AppState, runPipeline: RunPipelineFn) {
+function createDebouncedCheck(
+  state: AppState,
+  analyzePromptAndApplyInterventions: AnalyzePromptPipelineFn
+) {
   /**
    * stale-result guard:
    * snapshotText is the text at scheduling time. currentText is at execution time
@@ -86,17 +60,12 @@ function createDebouncedCheck(state: AppState, runPipeline: RunPipelineFn) {
   function checkComposerDraft(snapshotText: string): void {
     const currentText = getComposerText();
     if (currentText !== snapshotText) {
-      console.log('[PromptMentor Debug] checkComposerDraft: stale result discarded', {
+      debugLog('Draft check stale result discarded', {
         snapshot: snapshotText.slice(0, 40),
         current: currentText.slice(0, 40),
       });
       return;
     }
-
-    console.log('[PromptMentor Debug] checkComposerDraft: draft text', {
-      textLen: currentText.length,
-      snippet: currentText.slice(0, 60),
-    });
 
     // minimum length gate
     if (currentText.length < 15) {
@@ -105,7 +74,7 @@ function createDebouncedCheck(state: AppState, runPipeline: RunPipelineFn) {
     }
 
     // run the full 3-strategy pipeline
-    runPipeline(currentText, state.overlayVisible, currentText);
+    analyzePromptAndApplyInterventions(currentText, state.overlayVisible, currentText, 'draft');
   }
 
   return debounce(checkComposerDraft, DEBOUNCE_DELAY_MS, {
@@ -123,24 +92,22 @@ function createDebouncedCheck(state: AppState, runPipeline: RunPipelineFn) {
  * (chatgpt loads the editor asynchronously)
  *
  * @param state       — shared app state (used to read overlayVisible guard)
- * @param runPipeline — injected from content.ts to avoid circular import
+ * @param analyzePromptAndApplyInterventions — injected from content.ts to avoid circular import
  */
-export function initComposerObserver(state: AppState, runPipeline: RunPipelineFn): void {
+export function startDraftPromptObserver(
+  state: AppState,
+  analyzePromptAndApplyInterventions: AnalyzePromptPipelineFn
+): void {
   const composer = getComposerElement();
-  console.log('[PromptMentor Debug] initComposerObserver: composer lookup', {
-    composerNull: composer === null,
-    tagName: composer?.tagName,
-    id: composer?.id,
-  });
 
   if (!composer) {
     // composer not ready yet — retry in 500ms
-    setTimeout(() => initComposerObserver(state, runPipeline), 500);
+    setTimeout(() => startDraftPromptObserver(state, analyzePromptAndApplyInterventions), 500);
     return;
   }
 
   // create the debounced checker once and hold onto the reference
-  const debouncedCheck = createDebouncedCheck(state, runPipeline);
+  const debouncedCheck = createDebouncedCheck(state, analyzePromptAndApplyInterventions);
 
   const observerConfig: MutationObserverInit = {
     childList: true, // watch for child elements being added/removed (prosemirror paragraph changes)
@@ -161,8 +128,11 @@ export function initComposerObserver(state: AppState, runPipeline: RunPipelineFn
 
   observer.observe(composer, observerConfig);
 
-  console.log('[PromptMentor Debug] initComposerObserver: observer attached', {
+  trackTelemetryEvent('draft_observer_started', {
+    debounceDelayMs: DEBOUNCE_DELAY_MS,
+    maxWaitMs: MAX_WAIT_MS,
+  });
+  debugLog('Draft observer attached', {
     observedNodeId: composer.id,
   });
-  console.log('[PromptMentor] Composer observer initialized (typing detection active)');
 }
